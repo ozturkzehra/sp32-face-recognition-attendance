@@ -1,0 +1,61 @@
+// =====================
+// 📧 MAİL İZNİ (1 KERE ELLE ÇALIŞTIR)
+// =====================
+
+// =====================
+// 🌐 WEB APP – YOKLAMA + MAİL
+// =====================
+function doGet(e) {
+
+  if (!e || !e.parameter || !e.parameter.ogrenci) {
+    return ContentService.createTextOutput("ogrenci parametresi yok");
+  }
+
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var ogrenci = e.parameter.ogrenci.toLowerCase().trim();
+
+  var now = new Date();
+  var tarih = Utilities.formatDate(now, "Europe/Istanbul", "dd.MM.yyyy");
+  var saat  = Utilities.formatDate(now, "Europe/Istanbul", "HH:mm:ss");
+
+  var lastRow = sheet.getLastRow();
+  var data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+
+  for (var i = 0; i < data.length; i++) {
+
+    var isim  = data[i][0].toString().toLowerCase().trim();
+    var mail  = data[i][4]; // E sütunu
+    var onay  = data[i][3]; // D sütunu (checkbox)
+
+    if (isim === ogrenci) {
+
+      // Eğer zaten onaylıysa tekrar mail atma
+      if (onay === true) {
+        return ContentService.createTextOutput("Zaten yoklama alınmış");
+      }
+
+      // 📝 TABLOYA YAZ
+      sheet.getRange(i + 2, 2).setValue(tarih); // B
+      sheet.getRange(i + 2, 3).setValue(saat);  // C
+      sheet.getRange(i + 2, 4).setValue(true);  // D ☑
+
+      // 📧 ÖĞRENCİYE MAİL
+      if (mail) {
+        MailApp.sendEmail({
+          to: mail,
+          subject: "✅ Yoklamanız Başarıyla Alındı",
+          body:
+            "Merhaba " + isim + ",\n\n" +
+            "Yoklamanız başarıyla alınmıştır.\n\n" +
+            "📅 Tarih: " + tarih + "\n" +
+            "⏰ Saat: " + saat + "\n\n" +
+            "İyi dersler dileriz."
+        });
+      }
+
+      return ContentService.createTextOutput("OK: " + ogrenci);
+    }
+  }
+
+  return ContentService.createTextOutput("Bulunamadı: " + ogrenci);
+}
